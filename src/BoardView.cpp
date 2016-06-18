@@ -46,7 +46,7 @@ void BoardView::Update() {
 			if (ImGui::MenuItem("Open", "Ctrl+O")) {
 				open_file = true;
 			}
-			if (ImGui::MenuItem("Quit")) {
+			if (ImGui::MenuItem("Quit", "Ctrl+Q")) {
 				m_wantsQuit = true;
 			}
 			ImGui::EndMenu();
@@ -284,6 +284,18 @@ void BoardView::Update() {
 	ImGui::PopStyleVar();
 }
 
+void BoardView::ChangeZoom(ImVec2 target, float factor) {
+	// Zoom in on the screen-space point given by target
+
+	ImVec2 coord = ScreenToCoord(target.x, target.y);
+	m_scale = m_scale * factor;
+	ImVec2 dtarget = CoordToScreen(coord.x, coord.y);
+	ImVec2 td = ScreenToCoord(target.x - dtarget.x, target.y - dtarget.y, 0);
+	m_dx += td.x;
+	m_dy += td.y;
+	m_needsRedraw = true;
+}
+
 void BoardView::HandleInput() {
 	const ImGuiIO &io = ImGui::GetIO();
 	if (ImGui::IsWindowHovered()) {
@@ -324,22 +336,84 @@ void BoardView::HandleInput() {
 		float mwheel = io.MouseWheel;
 		if (mwheel != 0.0f) {
 			const ImVec2 &target = io.MousePos;
-			ImVec2 coord = ScreenToCoord(target.x, target.y);
 			mwheel *= 0.5f;
 			// Ctrl slows down the zoom speed:
 			if (ImGui::IsKeyDown(17)) {
 				mwheel *= 0.1f;
 			}
-			m_scale = m_scale * powf(2.0f, mwheel);
-
-			ImVec2 dtarget = CoordToScreen(coord.x, coord.y);
-			ImVec2 td = ScreenToCoord(target.x - dtarget.x, target.y - dtarget.y, 0);
-			m_dx += td.x;
-			m_dy += td.y;
-			m_needsRedraw = true;
+			float factor = powf(2.0f, mwheel);
+			ChangeZoom(target, factor);
 		}
 	}
 	if (!io.WantCaptureKeyboard) {
+
+		// Ctrl-Q as alternative quit shortcut (Alt-F4 is already handled by Windows)
+		if (ImGui::IsKeyPressed('Q') && ImGui::IsKeyDown(17)) {
+			m_wantsQuit = true;
+		}
+
+		// (I/+/PgUp) and (O/-/PgDn) keys as alternate zoom. Will zoom on the centre of the
+		// viewport, not on the mouse.
+
+		// TODO numpad +/- scancodes
+		if (ImGui::IsKeyPressed('I') || ImGui::IsKeyPressed(187) ||
+		    ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_PageUp) || ImGui::IsKeyPressed(0x6B))) {
+			ImVec2 target = ImGui::GetWindowSize();
+			target.x *= 0.5f;
+			target.y *= 0.5f;
+
+			float zoom = 2.0f;
+			ChangeZoom(target, zoom);
+		}
+
+		if (ImGui::IsKeyPressed('O') || ImGui::IsKeyPressed(189) ||
+		    ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_PageDown) ||
+		                        ImGui::IsKeyPressed(0x6D))) {
+			ImVec2 target = ImGui::GetWindowSize();
+			target.x *= 0.5f;
+			target.y *= 0.5f;
+
+			float zoom = 0.5f;
+			ChangeZoom(target, zoom);
+		}
+
+		// Arrow keys or WASD to move viewport by a percentage of the screen width/height
+		{
+			ImVec2 delta(0.0f, 0.0f);
+
+			float dist = 0.125f;
+
+			// Ctrl slows down the movement speed
+			if (ImGui::IsKeyDown(17)) {
+				dist *= 0.1f;
+			}
+
+			if (ImGui::IsKeyPressed('W') || ImGui::IsKeyPressed(0x68) ||
+			    ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_UpArrow)))
+				delta.y = dist;
+			if (ImGui::IsKeyPressed('S') || ImGui::IsKeyPressed(0x62) ||
+			    ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_DownArrow)))
+				delta.y = -dist;
+			if (ImGui::IsKeyPressed('A') || ImGui::IsKeyPressed(0x64) ||
+			    ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_LeftArrow)))
+				delta.x = dist;
+			if (ImGui::IsKeyPressed('D') || ImGui::IsKeyPressed(0x66) ||
+			    ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_RightArrow)))
+				delta.x = -dist;
+
+			if (delta.x != 0.0f || delta.y != 0.0f) {
+
+				// Account for zoom level by using screen coordinates (TODO easier using m_scale?)
+				ImVec2 dims = ImGui::GetWindowSize();
+				ImVec2 dimc = ScreenToCoord(dims.x, dims.y, 0);
+				ImVec2 c = ScreenToCoord(0.0f, 0.0f, 0);
+				ImVec2 motion((dimc.x - c.x) * delta.x, (dimc.y - c.y) * delta.y);
+				m_dx += motion.x;
+				m_dy += motion.y;
+				m_needsRedraw = true;
+			}
+		}
+
 		// Flip board:
 		if (ImGui::IsKeyPressed(' ')) {
 			FlipBoard();

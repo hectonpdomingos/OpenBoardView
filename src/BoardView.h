@@ -118,6 +118,7 @@ struct BoardView {
 	void ShowPartList(bool *p_open);
 
 	void Update();
+	void ChangeZoom(ImVec2 coord, float scale);
 	void HandleInput();
 	void RenderOverlay();
 	void DrawOutline(ImDrawList *draw);
