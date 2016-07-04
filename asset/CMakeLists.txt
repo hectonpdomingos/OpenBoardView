@@ -2,12 +2,33 @@
 #
 #
 
-# These files will be added to the main target later
-set(ASSETS
-	"${CMAKE_CURRENT_SOURCE_DIR}/OpenBoardView.rc" # Needed for MSVS resource compiler
-	"${CMAKE_CURRENT_SOURCE_DIR}/FiraSans-Medium.ttf"
-	PARENT_SCOPE # Send this to everyone
-)
+if (MSVC)
+	# Needed for MSVS resource compiler
+	set(ICON "${CMAKE_CURRENT_SOURCE_DIR}/OpenBoardView.rc" PARENT_SCOPE)
+elseif(APPLE)
+	# Used for app bundle
+	set(ICON "${CMAKE_CURRENT_SOURCE_DIR}/brd.icns" PARENT_SCOPE)
+	set(PLIST "${CMAKE_CURRENT_SOURCE_DIR}/MacOSXBundleInfo.plist.in" PARENT_SCOPE)
+else()
+	# Assume a FreeDesktop.org system, e.g. linux
+	configure_file("desktop.in" "${PROJECT_NAME}.desktop")
+	install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.desktop"
+	DESTINATION "${INSTALL_SHARE_DIR}/applications/")
+
+	# MimeTypes, should be refreshed with update-mime-database /usr/share/mime
+	install(FILES "mime.xml"
+		DESTINATION "${INSTALL_SHARE_DIR}/mime/packages"
+		RENAME "${PROJECT_NAME}.xml")
+
+	# Icons
+	# Add icons to the hicolor theme (used by at lease GNOME and KDE)
+	install(DIRECTORY "hicolor"
+		DESTINATION "${INSTALL_SHARE_DIR}/icons/"
+		PATTERN "README*" EXCLUDE)
+	# Copy the 48px icon to pixmaps too (extra compatibility)
+	install(FILES "hicolor/48x48/apps/${PROJECT_NAME}.png"
+		DESTINATION "${INSTALL_SHARE_DIR}/pixmaps/")
+endif()
 
 # WiX Installer images
 set(CPACK_WIX_PRODUCT_ICON "${CMAKE_CURRENT_SOURCE_DIR}\\\\brd.ico" PARENT_SCOPE) # icon for Add/Remove with WiX installer
