@@ -28,6 +28,18 @@ else()
 	# Copy the 48px icon to pixmaps too (extra compatibility)
 	install(FILES "hicolor/48x48/apps/${PROJECT_NAME}.png"
 		DESTINATION "${INSTALL_SHARE_DIR}/pixmaps/")
+
+	# [Un]Install scripts
+	# Currently only used to update MimeTypes
+	configure_file("deb_install.sh.in" "postinst" @ONLY)
+	configure_file("deb_install.sh.in" "postrm"   @ONLY)
+	# Deb
+	set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA
+	"${CMAKE_CURRENT_BINARY_DIR}/postinst"
+	"${CMAKE_CURRENT_BINARY_DIR}/postrm")
+	# RPM
+	set(CPACK_RPM_POST_INSTALL_SCRIPT_FILE "${CMAKE_CURRENT_BINARY_DIR}/postinst")
+	set(CPACK_RPM_POST_UNINSTALL_SCRIPT_FILE "${CMAKE_CURRENT_BINARY_DIR}/postrm")
 endif()
 
 # WiX Installer images
@@ -39,3 +51,4 @@ set(CPACK_WIX_UI_DIALOG "${CMAKE_CURRENT_SOURCE_DIR}\\\\wix_installer_bg.bmp" PA
 set(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/LICENSE.txt" PARENT_SCOPE) # License
 set(CPACK_RESOURCE_FILE_README  "${PROJECT_SOURCE_DIR}/README.md" PARENT_SCOPE) # License
 set(CPACK_RESOURCE_FILE_WELCOME "${CMAKE_CURRENT_SOURCE_DIR}/Installer_Welcome.txt" PARENT_SCOPE) # Welcome text
+set(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/Package_Description.txt") #
