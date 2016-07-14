@@ -1,0 +1,46 @@
+### .travis.yml
+#
+# This file is used by Travis CI to automatically build
+# OpenBoardView on any changes or PRs.
+#
+
+language: cpp
+os:
+- linux
+- osx
+matrix:
+  include:
+    - os: linux
+        dist: trusty
+        sudo: required
+        before_install:
+          - sudo add-apt-repository ppa:george-edison55/precise-backports -y
+          - sudo apt-get update -qq
+          - sudo apt-get install cmake
+    - os: osx
+        osx_image: xcode7.3
+compiler:
+  - gcc
+script:
+  - mkdir build
+  - cd build
+  - cmake .. -DCMAKE_BUILD_TYPE=Release
+  - make
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cpack -G DEB -C Release ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cpack -G RPM -C Release ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cpack -G TGZ -C Release ; fi
+#deploy:
+#  - provider: releases
+#    api_key: "GITHUB OAUTH TOKEN"
+#    file: "FILE TO UPLOAD"
+#    skip_cleanup: true
+#    on:
+#      tags: true
+#  - provider: launchpad
+#    slug: "~openboardview/openboardview/master"
+#    oauth_token:
+#      secure: "YOUR OAUTH_TOKEN"
+#    oauth_token_secret:
+#      secure: "YOUR OAUTH_TOKEN_SECRET"
+#    on:
+#      branch: master

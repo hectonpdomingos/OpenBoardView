@@ -1,6 +1,6 @@
 ## Open Board Viewer
 
-AppVeyor Windows build: [![Build status](https://ci.appveyor.com/api/projects/status/avgn60acyn0cqyw4/branch/master?svg=true)](https://ci.appveyor.com/project/OpenBoardView/openboardview/branch/master)
+AppVeyor Windows build: [![Build status](https://ci.appveyor.com/api/projects/status/avgn60acyn0cqyw4/branch/master?svg=true)](https://ci.appveyor.com/project/OpenBoardView/openboardview/branch/master) Travis Unix builds: [![Build Status](https://travis-ci.org/OpenBoardView/OpenBoardView.svg?branch=master)](https://travis-ci.org/OpenBoardView/OpenBoardView)
 
 Software for viewing .brd files, intended as a drop-in replacement for the
 "Test_Link" software.
