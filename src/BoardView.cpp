@@ -30,21 +30,14 @@ BoardView::~BoardView() {
 
 #pragma region Update Logic
 void BoardView::Update() {
-	bool open_file = false;
 	float menu_height = 0;
-	ImGuiIO &io = ImGui::GetIO();
+	const ImGuiIO &io = ImGui::GetIO();
 
-	if (ImGui::IsKeyDown(17) && ImGui::IsKeyPressed('O', false)) {
-		open_file = true;
-		// the dialog will likely eat our WM_KEYUP message for CTRL and O:
-		io.KeysDown[17] = false;
-		io.KeysDown['O'] = false;
-	}
 	if (ImGui::BeginMainMenuBar()) {
 		menu_height = ImGui::GetWindowHeight();
 		if (ImGui::BeginMenu("File")) {
 			if (ImGui::MenuItem("Open", "Ctrl+O")) {
-				open_file = true;
+				m_open_file = true;
 			}
 			if (ImGui::MenuItem("Quit", "Ctrl+Q")) {
 				m_wantsQuit = true;
@@ -217,7 +210,8 @@ void BoardView::Update() {
 		ImGui::EndMainMenuBar();
 	}
 
-	if (open_file) {
+	if (m_open_file) {
+		m_open_file = false;
 		char *filename = show_file_picker();
 		if (filename) {
 			SetLastFileOpenName(filename);
@@ -297,7 +291,8 @@ void BoardView::ChangeZoom(ImVec2 target, float factor) {
 }
 
 void BoardView::HandleInput() {
-	const ImGuiIO &io = ImGui::GetIO();
+	ImGuiIO &io = ImGui::GetIO();
+
 	if (ImGui::IsWindowHovered()) {
 		// Pan:
 		if (ImGui::IsMouseDragging()) {
@@ -347,7 +342,15 @@ void BoardView::HandleInput() {
 	}
 	if (!io.WantCaptureKeyboard) {
 
-		// Ctrl-Q as alternative quit shortcut (Alt-F4 is already handled by Windows)
+		// Ctrl+O to open a file
+		if (ImGui::IsKeyDown(17) && ImGui::IsKeyPressed('O', false)) {
+			m_open_file = true;
+			// the dialog will likely eat our WM_KEYUP message for CTRL and O:
+			io.KeysDown[17] = false;
+			io.KeysDown['O'] = false;
+		}
+
+		// Ctrl+Q as alternative quit shortcut (Alt-F4 is already handled by Windows)
 		if (ImGui::IsKeyPressed('Q') && ImGui::IsKeyDown(17)) {
 			m_wantsQuit = true;
 		}

@@ -88,6 +88,7 @@ struct BoardView {
 	int m_current_side;
 	int m_boardWidth;
 	int m_boardHeight;
+	bool m_open_file;
 
 	ColorScheme m_colors;
 
