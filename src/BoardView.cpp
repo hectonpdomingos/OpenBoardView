@@ -282,7 +282,7 @@ void BoardView::ChangeZoom(ImVec2 target, float factor) {
 	// Zoom in on the screen-space point given by target
 
 	ImVec2 coord = ScreenToCoord(target.x, target.y);
-	m_scale = m_scale * factor;
+	m_scale = m_scale * powf(2.0f, factor);
 	ImVec2 dtarget = CoordToScreen(coord.x, coord.y);
 	ImVec2 td = ScreenToCoord(target.x - dtarget.x, target.y - dtarget.y, 0);
 	m_dx += td.x;
@@ -292,7 +292,19 @@ void BoardView::ChangeZoom(ImVec2 target, float factor) {
 
 void BoardView::HandleInput() {
 	ImGuiIO &io = ImGui::GetIO();
+	float speed = 1;
 
+	// Modifiers
+	if (!io.WantCaptureKeyboard) {
+		if (io.KeyCtrl) {
+			speed *= 0.2f;
+		}
+		if (io.KeyShift) {
+			speed *= 5.0f;
+		}
+	}
+
+	// Mouse
 	if (ImGui::IsWindowHovered()) {
 		// Pan:
 		if (ImGui::IsMouseDragging()) {
@@ -331,19 +343,16 @@ void BoardView::HandleInput() {
 		float mwheel = io.MouseWheel;
 		if (mwheel != 0.0f) {
 			const ImVec2 &target = io.MousePos;
-			mwheel *= 0.5f;
-			// Ctrl slows down the zoom speed:
-			if (ImGui::IsKeyDown(17)) {
-				mwheel *= 0.1f;
-			}
-			float factor = powf(2.0f, mwheel);
-			ChangeZoom(target, factor);
+			mwheel *= 0.3f;
+			mwheel *= speed;
+			ChangeZoom(target, mwheel);
 		}
 	}
+	// Keyboard
 	if (!io.WantCaptureKeyboard) {
 
 		// Ctrl+O to open a file
-		if (ImGui::IsKeyDown(17) && ImGui::IsKeyPressed('O', false)) {
+		if (io.KeyCtrl && ImGui::IsKeyPressed('O', false)) {
 			m_open_file = true;
 			// the dialog will likely eat our WM_KEYUP message for CTRL and O:
 			io.KeysDown[17] = false;
@@ -351,7 +360,7 @@ void BoardView::HandleInput() {
 		}
 
 		// Ctrl+Q as alternative quit shortcut (Alt-F4 is already handled by Windows)
-		if (ImGui::IsKeyPressed('Q') && ImGui::IsKeyDown(17)) {
+		if (io.KeyCtrl && ImGui::IsKeyPressed('Q')) {
 			m_wantsQuit = true;
 		}
 
@@ -360,23 +369,30 @@ void BoardView::HandleInput() {
 
 		// TODO numpad +/- scancodes
 		if (ImGui::IsKeyPressed('I') || ImGui::IsKeyPressed(187) ||
-		    ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_PageUp) || ImGui::IsKeyPressed(0x6B))) {
+		    ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_PageUp)) || ImGui::IsKeyPressed(0x6B)) {
 			ImVec2 target = ImGui::GetWindowSize();
 			target.x *= 0.5f;
 			target.y *= 0.5f;
 
-			float zoom = 2.0f;
+			float zoom = 0.3f;
+			// We don't apply speed modifier to I or O as Ctrl+O clashes with Open
+			if (!ImGui::IsKeyPressed('I'))
+				zoom *= speed;
+
 			ChangeZoom(target, zoom);
 		}
 
 		if (ImGui::IsKeyPressed('O') || ImGui::IsKeyPressed(189) ||
-		    ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_PageDown) ||
-		                        ImGui::IsKeyPressed(0x6D))) {
+		    ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_PageDown)) ||
+		    ImGui::IsKeyPressed(0x6D)) {
 			ImVec2 target = ImGui::GetWindowSize();
 			target.x *= 0.5f;
 			target.y *= 0.5f;
 
-			float zoom = 0.5f;
+			float zoom = -0.3f;
+			if (!ImGui::IsKeyPressed('O'))
+				zoom *= speed;
+
 			ChangeZoom(target, zoom);
 		}
 
@@ -384,12 +400,7 @@ void BoardView::HandleInput() {
 		{
 			ImVec2 delta(0.0f, 0.0f);
 
-			float dist = 0.125f;
-
-			// Ctrl slows down the movement speed
-			if (ImGui::IsKeyDown(17)) {
-				dist *= 0.1f;
-			}
+			float dist = 0.125f * speed;
 
 			if (ImGui::IsKeyPressed('W') || ImGui::IsKeyPressed(0x68) ||
 			    ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_UpArrow)))
